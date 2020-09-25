@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:moor_flutter/moor_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/moor_database.dart';
@@ -40,13 +41,13 @@ class _NewTaskInputState extends State<NewTaskInput> {
   RaisedButton _buildRaisedButton(BuildContext context) {
     return RaisedButton(
       onPressed: () {
-        final database = Provider.of<AppDatabase>(context, listen: false);
+        final dao = Provider.of<TaskDAO>(context, listen: false);
         print('abcdefgh');
-        final task = Task(
-          name: controller.text,
-          dueDate: newTaskDate,
+        final task = TasksCompanion(
+          name: Value(controller.text),
+          dueDate: Value(newTaskDate),
         );
-        database.insertTask(task);
+        dao.insertTask(task);
         resetValuesAfterSubmit();
       },
       child: Text('Submit'),
