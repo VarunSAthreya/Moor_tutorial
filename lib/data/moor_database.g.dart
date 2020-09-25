@@ -284,8 +284,24 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(SqlTypeSystem.defaultInstance, e);
   $TasksTable _tasks;
   $TasksTable get tasks => _tasks ??= $TasksTable(this);
+  TaskDAO _taskDAO;
+  TaskDAO get taskDAO => _taskDAO ??= TaskDAO(this as AppDatabase);
   @override
   Iterable<TableInfo> get allTables => allSchemaEntities.whereType<TableInfo>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [tasks];
+}
+
+// **************************************************************************
+// DaoGenerator
+// **************************************************************************
+
+mixin _$TaskDAOMixin on DatabaseAccessor<AppDatabase> {
+  $TasksTable get tasks => attachedDatabase.tasks;
+  Selectable<Task> completedTasksGenerated() {
+    return customSelect(
+        'SELECT * FROM tasks WHERE completed = 1 ORDER BY due_date DESC, name;',
+        variables: [],
+        readsFrom: {tasks}).map(tasks.mapFromRow);
+  }
 }
