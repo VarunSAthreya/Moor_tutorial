@@ -538,12 +538,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 
 mixin _$TaskDAOMixin on DatabaseAccessor<AppDatabase> {
   $TasksTable get tasks => attachedDatabase.tasks;
-  Selectable<Task> completedTasksGenerated() {
-    return customSelect(
-        'SELECT * FROM tasks WHERE completed = 1 ORDER BY due_date DESC, name;',
-        variables: [],
-        readsFrom: {tasks}).map(tasks.mapFromRow);
-  }
+  $TagsTable get tags => attachedDatabase.tags;
 }
 mixin _$TagDAOMixin on DatabaseAccessor<AppDatabase> {
   $TagsTable get tags => attachedDatabase.tags;

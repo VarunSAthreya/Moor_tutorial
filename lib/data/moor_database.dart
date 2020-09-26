@@ -12,6 +12,16 @@ class Tasks extends Table {
   BoolColumn get completed => boolean().withDefault(Constant(false))();
 }
 
+class TaskWithTag {
+  final Task task;
+  final Tag tag;
+
+  TaskWithTag({
+    @required this.task,
+    @required this.tag,
+  });
+}
+
 @UseMoor(tables: [Tasks, Tags], daos: [TaskDAO, TagDAO])
 class AppDatabase extends _$AppDatabase {
   AppDatabase()
@@ -19,15 +29,23 @@ class AppDatabase extends _$AppDatabase {
             path: 'db.sqlite', logStatements: true));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onUpgrade: (migrator, from, to) async {
+          if (from == 1) {
+            await migrator.addColumn(tasks, tasks.tagName);
+            await migrator.createTable(tags);
+          }
+        },
+        beforeOpen: (details) async {
+          await customStatement('PRAGMA foreign_keys = ON');
+        },
+      );
 }
 
-@UseDao(tables: [
-  Tasks
-], queries: {
-  'completedTasksGenerated':
-      'SELECT * FROM tasks WHERE completed = 1 ORDER BY due_date DESC, name;'
-})
+@UseDao(tables: [Tasks, Tags])
 class TaskDAO extends DatabaseAccessor<AppDatabase> with _$TaskDAOMixin {
   final AppDatabase db;
 
@@ -35,25 +53,51 @@ class TaskDAO extends DatabaseAccessor<AppDatabase> with _$TaskDAOMixin {
 
 // Get/Watch task
 
-  Future<List<Task>> getAllTasks() => select(tasks).get();
+  // Future<List<Task>> getAllTasks() => select(tasks).get();
 
-  Stream<List<Task>> watchAllTasks() {
+  Stream<List<TaskWithTag>> watchAllTasks() {
     return (select(tasks)
           ..orderBy([
             (t) => OrderingTerm(expression: t.dueDate, mode: OrderingMode.desc),
             (t) => OrderingTerm(expression: t.name),
           ]))
-        .watch();
+        .join(
+          [
+            leftOuterJoin(tags, tags.name.equalsExp(tasks.tagName)),
+          ],
+        )
+        .watch()
+        .map((rows) => rows.map(
+              (row) {
+                return TaskWithTag(
+                  task: row.readTable(tasks),
+                  tag: row.readTable(tags),
+                );
+              },
+            ).toList());
   }
 
-  Stream<List<Task>> watchCompletedTasks() {
+  Stream<List<TaskWithTag>> watchCompletedTasks() {
     return (select(tasks)
           ..orderBy([
             (t) => OrderingTerm(expression: t.dueDate, mode: OrderingMode.desc),
             (t) => OrderingTerm(expression: t.name),
           ])
           ..where((t) => t.completed.equals(true)))
-        .watch();
+        .join(
+          [
+            leftOuterJoin(tags, tags.name.equalsExp(tasks.tagName)),
+          ],
+        )
+        .watch()
+        .map((rows) => rows.map(
+              (row) {
+                return TaskWithTag(
+                  task: row.readTable(tasks),
+                  tag: row.readTable(tags),
+                );
+              },
+            ).toList());
   }
 
   // Stream<List<Task>> watchCompletedTasksCustom() {
