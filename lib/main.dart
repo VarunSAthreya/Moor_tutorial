@@ -7,10 +7,15 @@ import 'ui/home_page.dart';
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
+  final db = AppDatabase();
+
   @override
   Widget build(BuildContext context) {
-    return Provider(
-      create: (context) => AppDatabase().taskDAO,
+    return MultiProvider(
+      providers: [
+        Provider(create: (_) => db.taskDAO),
+        Provider(create: (_) => db.tagDAO),
+      ],
       child: MaterialApp(
         title: 'Material App',
         home: HomePage(),
